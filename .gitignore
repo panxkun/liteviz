@@ -3,3 +3,9 @@ build
 
 lib
 bin
+imgui.ini
+
+run.sh
+
+*.jpg
+external

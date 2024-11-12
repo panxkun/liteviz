@@ -1,71 +1,66 @@
-cmake_minimum_required(VERSION 3.11)
-project(liteviz LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.14)
+project(LITEVIZ-GS)
 
-# Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+endif()
+
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-# Add compile options
-add_compile_options(-fPIC)
-
-# Find required packages
-find_package(GLEW REQUIRED)
-message(STATUS "Found GLEW in ${GLEW_INCLUDE_DIRS}")
-find_package(glfw3 REQUIRED)
-message(STATUS "Found GLFW3 in ${glfw3_INCLUDE_DIRS}")
-find_package(OpenCV REQUIRED)
-message(STATUS "Found OpenCV in ${OpenCV_INCLUDE_DIRS}")
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(glfw3 3.3 REQUIRED)
 find_package(OpenGL REQUIRED)
-message(STATUS "Found OpenGL in ${OPENGL_INCLUDE_DIR}")
+find_package(OpenCV REQUIRED)
 
-# Include necessary directories
-include_directories(
-  ${CMAKE_SOURCE_DIR}/imgui
-  ${CMAKE_SOURCE_DIR}/imgui/backends
-  ${GLEW_INCLUDE_DIRS}
-  ${glfw3_INCLUDE_DIRS}
-  ${OpenCV_INCLUDE_DIRS}
-  ${OPENGL_INCLUDE_DIR}
+set(GLAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/glad)
+add_library(glad STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/src/glad.c
+)
+target_include_directories(glad PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
 )
 
-# Find source files
-file(GLOB IMGUI_SOURCE
-  ${CMAKE_SOURCE_DIR}/imgui/*.h
-  ${CMAKE_SOURCE_DIR}/imgui/*.cpp
-  ${CMAKE_SOURCE_DIR}/imgui/backends/imgui_impl_glfw.*
-  ${CMAKE_SOURCE_DIR}/imgui/backends/imgui_impl_opengl3.*
+set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/imgui)
+add_library(imgui STATIC
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_demo.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+)
+target_include_directories(imgui PUBLIC
+    ${IMGUI_DIR}
 )
 
-file(GLOB LITEVIZ_SOURCE
-  ${CMAKE_SOURCE_DIR}/core/*.cpp
-  ${CMAKE_SOURCE_DIR}/core/*.h
+add_library(liteviz 
+    ${SOURCE_DIR}
 )
-
-add_library(liteviz STATIC
-  ${IMGUI_SOURCE}
-  ${LITEVIZ_SOURCE}
+target_include_directories(liteviz PUBLIC
+    ${SOURCE_DIR}
+    ${GLAD_DIR}/include
+    ${IMGUI_DIR}
+    ${TINIPLY_DIR}/include
+    ${EIGEN3_INCLUDE_DIR}
+    ${OpenCV_INCLUDE_DIRS}
 )
-
 target_link_libraries(liteviz
-  PRIVATE
     glfw
-    GLEW::GLEW
+    GLU
+    glad
+    dl
+    imgui
     ${OpenCV_LIBS}
-    ${OPENGL_LIBRARIES}
 )
 
-target_include_directories(liteviz PUBLIC ${CMAKE_SOURCE_DIR}/core)
-
-add_executable(viewer ${CMAKE_SOURCE_DIR}/app/main.cpp)
-target_link_libraries(viewer
-  PRIVATE
-    liteviz
-    glfw
-    GLEW::GLEW
-    ${OpenCV_LIBS}
-    ${OPENGL_LIBRARIES}
+target_compile_definitions(liteviz 
+    PUBLIC 
+    RESOURCE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"
 )
+
+add_executable(liteviz_viewer app/main.cpp)
+target_link_libraries(liteviz_viewer liteviz)
