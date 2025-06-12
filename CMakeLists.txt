@@ -44,7 +44,6 @@ target_include_directories(liteviz PUBLIC
     ${SOURCE_DIR}
     ${GLAD_DIR}/include
     ${IMGUI_DIR}
-    ${TINIPLY_DIR}/include
     ${EIGEN3_INCLUDE_DIR}
     ${OpenCV_INCLUDE_DIRS}
 )
