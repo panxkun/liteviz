@@ -10,6 +10,7 @@
 #include <iostream>
 #include <chrono>
 #include <mutex>
+#include <thread>
 #include <condition_variable> 
 #include <opencv2/opencv.hpp>
 #include "shader.h"
@@ -30,6 +31,8 @@ public:
         title(title), viewport(width, height){
         viewer = this;
         notifier = std::make_shared<ViewerNotifier>();
+
+        setFrameRate(30);
     }
 
     bool init(){
@@ -234,6 +237,20 @@ public:
         }
     }
 
+    void setFrameRate(const int fps) {
+        targetFPS = fps;
+        frameTime = 1000 / targetFPS;
+    }
+
+    void controlFrameRate() {
+        auto now = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime).count();
+        if (duration < frameTime) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(frameTime - duration));
+        }
+        lastTime = std::chrono::high_resolution_clock::now();
+    }
+
 
     virtual void drawData() = 0;
 
@@ -260,6 +277,10 @@ public:
     std::shared_ptr<PointCloud>     pointCloud      = nullptr;
     std::shared_ptr<Line>           line            = nullptr;
     std::shared_ptr<ImageTexture>   colorTexture    = nullptr;
+
+    int targetFPS = 30;
+    int frameTime;
+    std::chrono::time_point<std::chrono::high_resolution_clock> lastTime;
 };
 
 ViewerDetail* ViewerDetail::viewer = nullptr;
