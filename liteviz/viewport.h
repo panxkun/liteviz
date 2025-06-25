@@ -115,7 +115,7 @@ public:
 
     float zNear = 1.0e-1;
     float zFar = 1.0e2;
-    float fov = 90.0f;
+    float fov = 75.0f;
 
     CameraMotion camera;
 

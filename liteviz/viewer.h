@@ -10,6 +10,7 @@
 #include <iostream>
 #include <chrono>
 #include <mutex>
+#include <thread>
 #include <condition_variable> 
 #include <opencv2/opencv.hpp>
 #include "shader.h"
@@ -46,6 +47,10 @@ public:
 
     void run();
 
+    void setFrameRate(const int fps);
+
+    void controlFrameRate();
+
     virtual void drawData() = 0;
 
 public:
@@ -71,6 +76,10 @@ public:
     std::shared_ptr<PointCloud>     pointCloud      = nullptr;
     std::shared_ptr<Line>           line            = nullptr;
     std::shared_ptr<ImageTexture>   colorTexture    = nullptr;
+
+    int targetFPS = 30;
+    int frameTime;
+    std::chrono::time_point<std::chrono::high_resolution_clock> lastTime;
 };
 
 #endif // __VIEWER_H__

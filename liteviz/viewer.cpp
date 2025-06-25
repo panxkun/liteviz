@@ -223,4 +223,18 @@ void ViewerDetail::run() {
     }
 }
 
+void ViewerDetail::setFrameRate(const int fps) {
+    targetFPS = fps;
+    frameTime = 1000 / targetFPS;
+}
+
+void ViewerDetail::controlFrameRate() {
+    auto now = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime).count();
+    if (duration < frameTime) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(frameTime - duration));
+    }
+    lastTime = std::chrono::high_resolution_clock::now();
+}
+
 ViewerDetail* ViewerDetail::viewer = nullptr;
