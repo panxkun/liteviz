@@ -38,7 +38,7 @@ target_include_directories(imgui PUBLIC
 )
 
 add_library(liteviz 
-    ${SOURCE_DIR}
+    ${SOURCE_DIR}/liteviz/viewer.cpp
 )
 target_include_directories(liteviz PUBLIC
     ${SOURCE_DIR}
