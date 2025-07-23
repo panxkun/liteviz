@@ -6,8 +6,8 @@
 #include <iostream>
 #include <string>
 #include <Eigen/Eigen>
-#include <GL/glew.h>
-#include <GL/gl.h>
+#include <glad/glad.h>  
+#include <GLFW/glfw3.h>
 
 
 template <typename E> inline GLenum is_type_integral() {
@@ -75,64 +75,104 @@ template <> inline GLenum get_type_enum<GLfloat>() {
 
 class Shader {
 public:
-    Shader(const char *vshader_path, const char *fshader_path, const char *gshader_path = nullptr) {
+    Shader(const char *vshader_path, const char *fshader_path, bool create_buffer = true) {
         GLint status;
 
         std::string vshader_source = readShaderSourceFromFile(vshader_path);
         std::string fshader_source = readShaderSourceFromFile(fshader_path);
 
+        constexpr GLsizei MAX_INFO_LOG_LENGTH = 2000;
+        GLsizei info_log_length;
+        GLchar info_log[MAX_INFO_LOG_LENGTH];
+        GLint compilation_status;
+        auto check_comp_status = [&](GLuint shader) {
+            glGetShaderiv(shader, GL_COMPILE_STATUS, &compilation_status);
+            if (compilation_status == GL_TRUE)
+                return;
+            glGetShaderInfoLog(shader, MAX_INFO_LOG_LENGTH, &info_log_length, info_log);
+            std::cerr << "Shader compilation error:\n" << info_log << std::endl;
+            exit(1);
+        };
+
         vshader = glCreateShader(GL_VERTEX_SHADER);
         const char* vshader_code = vshader_source.c_str();
         glShaderSource(vshader, 1, &vshader_code, nullptr);
         glCompileShader(vshader);
-        glGetShaderiv(vshader, GL_COMPILE_STATUS, &status);
-        if (status != GL_TRUE) {
-            char infoLog[512];
-            glGetShaderInfoLog(vshader, 512, nullptr, infoLog);
-            std::cerr << "Error compiling vertex shader:\n" << infoLog << std::endl;
-            exit(1);
-        }
+        check_comp_status(vshader);
 
         fshader = glCreateShader(GL_FRAGMENT_SHADER);
         const char* fshader_code = fshader_source.c_str();
         glShaderSource(fshader, 1, &fshader_code, nullptr);
         glCompileShader(fshader);
-        glGetShaderiv(fshader, GL_COMPILE_STATUS, &status);
-        if (status != GL_TRUE) {
-            char infoLog[512];
-            glGetShaderInfoLog(fshader, 512, nullptr, infoLog);
-            std::cerr << "Error compiling fragment shader:\n" << infoLog << std::endl;
-            exit(1);
-        }
-
-        GLuint gshader = 0;
-        if (gshader_path != nullptr) {
-            std::string gshader_source = readShaderSourceFromFile(gshader_path);
-            gshader = glCreateShader(GL_GEOMETRY_SHADER);
-            const char* gshader_code = gshader_source.c_str();
-            glShaderSource(gshader, 1, &gshader_code, nullptr);
-            glCompileShader(gshader);
-            glGetShaderiv(gshader, GL_COMPILE_STATUS, &status);
-            if (status != GL_TRUE) {
-                char infoLog[512];
-                glGetShaderInfoLog(gshader, 512, nullptr, infoLog);
-                std::cerr << "Error compiling geometry shader:\n" << infoLog << std::endl;
-                exit(1);
-            }
-        }
+        check_comp_status(fshader);
 
         program = glCreateProgram();
         glAttachShader(program, vshader);
         glAttachShader(program, fshader);
-        if (gshader_path != nullptr) {
-            glAttachShader(program, gshader);
-        }
+
         glLinkProgram(program);
         glGetProgramiv(program, GL_LINK_STATUS, &status);
-        if (status != (GLint)GL_TRUE) {
-            char infoLog[512];
-            glGetProgramInfoLog(program, 512, nullptr, infoLog);
-            std::cerr << "Error linking shader program:\n" << infoLog << std::endl;
+        if (status != GL_TRUE) {
+            glGetProgramInfoLog(program, MAX_INFO_LOG_LENGTH, nullptr, info_log);
+            std::cerr << "Shader link error:\n" << info_log << std::endl;
+            exit(1);
+        }
+
+        if (create_buffer) {
+            glGenBuffers(1, &index_buffer);
+            glGenVertexArrays(1, &vertex_array);
+        }
+
+    }
+
+    Shader(const char *vshader_path, const char *fshader_path, const char *gshader_path){
+        GLint status;
+
+        std::string vshader_source = readShaderSourceFromFile(vshader_path);
+        std::string fshader_source = readShaderSourceFromFile(fshader_path);
+        std::string gshader_source = readShaderSourceFromFile(gshader_path);
+
+        constexpr GLsizei MAX_INFO_LOG_LENGTH = 2000;
+        GLsizei info_log_length;
+        GLchar info_log[MAX_INFO_LOG_LENGTH];
+        GLint compilation_status;
+        auto check_comp_status = [&](GLuint shader) {
+            glGetShaderiv(shader, GL_COMPILE_STATUS, &compilation_status);
+            if (compilation_status == GL_TRUE)
+                return;
+            glGetShaderInfoLog(shader, MAX_INFO_LOG_LENGTH, &info_log_length, info_log);
+            std::cerr << "Shader compilation error:\n" << info_log << std::endl;
+            exit(1);
+        };
+
+        vshader = glCreateShader(GL_VERTEX_SHADER);
+        const char* vshader_code = vshader_source.c_str();
+        glShaderSource(vshader, 1, &vshader_code, nullptr);
+        glCompileShader(vshader);
+        check_comp_status(vshader);
+
+        fshader = glCreateShader(GL_FRAGMENT_SHADER);
+        const char* fshader_code = fshader_source.c_str();
+        glShaderSource(fshader, 1, &fshader_code, nullptr);
+        glCompileShader(fshader);
+        check_comp_status(fshader);
+
+        gshader = glCreateShader(GL_GEOMETRY_SHADER);
+        const char* gshader_code = gshader_source.c_str();
+        glShaderSource(gshader, 1, &gshader_code, nullptr);
+        glCompileShader(gshader);
+        check_comp_status(gshader);
+
+        program = glCreateProgram();
+        glAttachShader(program, vshader);
+        glAttachShader(program, fshader);
+        glAttachShader(program, gshader);
+
+        glLinkProgram(program);
+        glGetProgramiv(program, GL_LINK_STATUS, &status);
+        if (status != GL_TRUE) {
+            glGetProgramInfoLog(program, MAX_INFO_LOG_LENGTH, nullptr, info_log);
+            std::cerr << "Shader link error:\n" << info_log << std::endl;
             exit(1);
         }
 
@@ -144,8 +184,10 @@ public:
         for (auto [attrib, buffer] : attribute_buffers) {
             glDeleteBuffers(1, &buffer);
         }
-        glDeleteBuffers(1, &index_buffer);
-        glDeleteVertexArrays(1, &vertex_array);
+        if (vertex_array != 0)
+            glDeleteVertexArrays(1, &vertex_array);
+        if (index_buffer != 0)
+            glDeleteBuffers(1, &index_buffer);
 
         glDetachShader(program, fshader);
         glDetachShader(program, vshader);
@@ -154,20 +196,44 @@ public:
         glDeleteShader(vshader);
     }
 
-    void bind() {
+    void bind(bool use_buffer = true) {
+        if(use_buffer) {
+            glBindVertexArray(vertex_array);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+        }
         glUseProgram(program);
-        glBindVertexArray(vertex_array);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
     }
 
-    void unbind() {
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
+    void unbind(bool use_buffer = true) {
+        if(use_buffer) {
+            glBindVertexArray(0);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        }
+        glUseProgram(0);
+    }
+
+    GLuint programID() const {
+        return program;
+    }
+
+    void set_uniform(const std::string &name, const size_t &value) {
+        GLint uni = uniform(name);
+        glUniform1i(uni, value);
+    }
+
+    void set_uniform(const std::string &name, const int &value) {
+        GLint uni = uniform(name);
+        glUniform1i(uni, value);
     }
 
     void set_uniform(const std::string &name, const float &value) {
         GLint uni = uniform(name);
         glUniform1f(uni, value);
+    }
+
+    void set_uniform(const std::string &name, const Eigen::Vector2f &vector) {
+        GLint uni = uniform(name);
+        glUniform2fv(uni, 1, vector.data());
     }
 
     void set_uniform(const std::string &name, const Eigen::Vector3f &vector) {
@@ -189,17 +255,6 @@ public:
     void set_uniform(const std::string &name) {
         GLint uni = uniform(name);
         glUniform1i(uni, 0);
-    }
-
-    std::string readShaderSourceFromFile(const std::string& filePath) {
-        std::ifstream file(filePath);
-        if (!file.is_open()) {
-            std::cerr << "Failed to open shader file: " << filePath << std::endl;
-            exit(1);
-        }
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        return buffer.str();
     }
 
     template <typename E, int N>
@@ -224,23 +279,33 @@ public:
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indices.size(), &indices[0], GL_DYNAMIC_DRAW);
     }
 
+
     void draw(GLenum mode, GLuint start, GLuint count) {
         glDrawArrays(mode, start, count);
     }
 
     void draw_indexed(GLenum mode, GLuint start, GLuint count) {
-        glDrawElements(mode, count, GL_UNSIGNED_INT,
-                    (const void *)(start * sizeof(GLuint)));
+        glDrawElements(mode, count, GL_UNSIGNED_INT, (const void *)(start * sizeof(GLuint)));
     }
 
-    private:
+private:
+    std::string readShaderSourceFromFile(const std::string& filePath) {
+        std::ifstream file(filePath);
+        if (!file.is_open()) {
+            std::cerr << "Failed to open shader file: " << filePath << std::endl;
+            exit(1);
+        }
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        return buffer.str();
+    }
+
     GLint uniform(const std::string &name) {
         if (uniforms.count(name) == 0) {
-            GLint location =
-                glGetUniformLocation(program, name.c_str());
+            GLint location = glGetUniformLocation(program, name.c_str());
             if (location == -1) {
-                puts("Error getting uniform location.");
-                exit(0);
+                std::cerr << "Error: cannot find uniform '" << name << "'\n";
+                exit(1);
             }
             uniforms[name] = location;
         }
@@ -262,13 +327,12 @@ public:
     GLuint program;
     GLuint vshader;
     GLuint fshader;
+    GLuint gshader;
     std::map<std::string, GLint> uniforms;
     std::map<std::string, GLint> attributes;
     std::map<GLint, GLuint> attribute_buffers;
-    GLuint index_buffer;
-    GLuint vertex_array;
-
+    GLuint index_buffer = 0;
+    GLuint vertex_array = 0;
 };
 
-
-#endif // LIGHTVIS_SHADER_H
+#endif // __SHADER_H__

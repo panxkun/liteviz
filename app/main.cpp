@@ -1,10 +1,24 @@
-#include <iostream>
-#include <window.h>
+#include <filesystem>
+#include <liteviz/core/detail.h>
 
-int main(int argc, char* argv[]) {
+class LiteViz: public ViewerDetail {
 
-    Window window("LiteViz", 1280, 720, true);
-    window.start_thread();
+public:
+    LiteViz(std::string title, int width, int height):
+        ViewerDetail(title, width, height) {
+        std::cout << "LiteViz SLAM Viewer initialized." << std::endl;
+    }
+
+    void drawData() override {
+        grid->draw(gridShader, viewport);
+    }
+};
+
+
+int main(int argc, char** argv) {
+
+    std::shared_ptr<LiteViz> viewer = std::make_shared<LiteViz>("LiteViz Viewer", 1280, 720);
+    viewer->run();
 
     return 0;
 }

@@ -1,4 +1,4 @@
-#version 400
+#version 430
 
 uniform float Alpha;
 in vec3 Frag_Position;

@@ -1,0 +1,14 @@
+JetBrains Mono Font License
+==============================
+
+Copyright 2020 The JetBrains Mono Project Authors
+(https://github.com/JetBrains/JetBrainsMono)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is available at: https://openfontlicense.org
+
+The JetBrains Mono font is used in this project under the terms of the SIL Open Font License 1.1.
+The font can be used, studied, modified and redistributed freely as long as it is not sold by itself.
+
+For the complete license text, please visit:
+https://github.com/JetBrains/JetBrainsMono/blob/master/OFL.txt
