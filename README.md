@@ -4,14 +4,19 @@
 
 ### Screenshots
 
+**Real-time SLAM System**
 <div style="text-align: center;">
-<img src="screenshot/example-vio.png" alt="SLAM-Viewer" style="max-width:75%;"/>
+<img src="screenshot/example-vio.png" alt="SLAM-Viewer" style="max-width:50%;"/>
 </div>
+
+**Structure from Motion**
 <div style="text-align: center;">
-<img src="screenshot/example-sfm.png" alt="SfM-Viewer" style="max-width:75%;"/>
+<img src="screenshot/example-sfm.png" alt="SfM-Viewer" style="max-width:50%;"/>
 </div>
+
+**CUDA-based Surfel Rendering**
 <div style="text-align: center;">
-<img src="screenshot/example-surfel.png" alt="Surfel-Viewer" style="max-width:75%;"/>
+<img src="screenshot/example-surfel.png" alt="Surfel-Viewer" style="max-width:50%;"/>
 </div>
 
 
