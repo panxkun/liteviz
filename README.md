@@ -23,7 +23,7 @@
 ### Installation
 
 ```bash
-git clone https://github.com/liteviz-dev/liteviz.git
+git clone https://github.com/panxkun/liteviz.git
 cd liteviz && mkdir build && cd build
 cmake .. && make
 
