@@ -7,6 +7,12 @@
 <div style="text-align: center;">
 <img src="screenshot/example-vio.png" alt="SLAM-Viewer" style="max-width:75%;"/>
 </div>
+<div style="text-align: center;">
+<img src="screenshot/example-sfm.png" alt="SfM-Viewer" style="max-width:75%;"/>
+</div>
+<div style="text-align: center;">
+<img src="screenshot/example-surfel.png" alt="Surfel-Viewer" style="max-width:75%;"/>
+</div>
 
 
 ### Installation
