@@ -84,10 +84,16 @@ htmlcov/
 *.log
 logs/
 
-submodules
-scripts
-results
-datasets
+_skbuild
+.deps-cache
 imgui.ini
-
 run.sh
+*.jpg
+run*
+
+
+data
+*.png
+*.ply
+*.mp4
+*.mkv
