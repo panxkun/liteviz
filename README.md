@@ -15,11 +15,12 @@ CMake 3.14+
 
 ### Build & Running
 
-```
+```bash
+# build the examples/cube
 git clone https://github.com/panxkun/liteviz.git
 cd liteviz
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release && make
+cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON && make
 
 ./examples/cube/cube-test
 ```
@@ -32,8 +33,8 @@ Then you will see a cube with mouse interaction.
 
 ## How to Use in Your Project
 
-Follow the use in examples/cube/main.cpp for a quick start. You only need to include the `liteviz/coredetail.h` folder in your project. Then
-```
+Follow the use in `examples/cube/main.cpp` for a quick start. You only need to include the `liteviz` folder in your project. Then
+```cpp
 #include <liteviz/core/detail.h>
 
 using namespace liteviz;
@@ -55,7 +56,7 @@ class YourVizApp : public LiteVizApp {
 
         std::shared_ptr<YourConfig> config = std::make_shared<YourConfig>();
         std::shared_ptr<YourRenderer> renderer = std::make_shared<YourRenderer>(config.get());
-        _registeredRenderers.push_back(renderer);
+        this->_registeredRenderers.push_back(renderer);
 
         return true;
     }
