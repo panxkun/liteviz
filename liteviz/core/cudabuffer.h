@@ -16,6 +16,24 @@ private:
     GLenum bufferType;
     size_t bufferSize;
 
+    void releaseCudaResource() {
+        if (cudaResource) {
+            cudaGraphicsUnregisterResource(cudaResource);
+            cudaResource = nullptr;
+        }
+    }
+
+    void releaseGLResources() {
+        if (vbo) {
+            glDeleteBuffers(1, &vbo);
+            vbo = 0;
+        }
+        if (fbo) {
+            glDeleteTransformFeedbacks(1, &fbo);
+            fbo = 0;
+        }
+    }
+
 public:
 
     CUDABuffer(GLenum bufferType):
@@ -23,31 +41,39 @@ public:
     }
 
     ~CUDABuffer() {
-        if (cudaResource) {
-            cudaGraphicsUnregisterResource(cudaResource);
-        }
-        if (vbo) {
-            glDeleteBuffers(1, &vbo);
-        }
+        releaseCudaResource();
+        releaseGLResources();
     }
 
     void initialize(size_t initialSize) {
         bufferSize = initialSize;
-        glGenTransformFeedbacks(1, &fbo);
-        glGenBuffers(1, &vbo);
+
+        if (!fbo) {
+            glGenTransformFeedbacks(1, &fbo);
+        }
+        if (!vbo) {
+            glGenBuffers(1, &vbo);
+        }
+
         glBindBuffer(bufferType, vbo);
         glBufferData(bufferType, bufferSize, nullptr, GL_STREAM_DRAW);
-        cudaGraphicsGLRegisterBuffer(&cudaResource, vbo, cudaGraphicsMapFlagsWriteDiscard);
         glBindBuffer(bufferType, 0);
-        cudaGraphicsMapResources(1, &cudaResource, 0);
+
+        releaseCudaResource();
+        cudaGraphicsGLRegisterBuffer(&cudaResource, vbo, cudaGraphicsMapFlagsWriteDiscard);
     }
 
     void resizeBuffer(size_t newSize) {
         if (newSize > bufferSize) {
-            if (cudaResource) {
-                cudaGraphicsUnregisterResource(cudaResource);
-            }
-            initialize(newSize);
+            bufferSize = newSize;
+
+            // Reallocate the existing GL buffer and re-register with CUDA.
+            // This avoids leaking VBO/CUDA resources when the pointmap grows.
+            releaseCudaResource();
+            glBindBuffer(bufferType, vbo);
+            glBufferData(bufferType, bufferSize, nullptr, GL_STREAM_DRAW);
+            glBindBuffer(bufferType, 0);
+            cudaGraphicsGLRegisterBuffer(&cudaResource, vbo, cudaGraphicsMapFlagsWriteDiscard);
         }
     }
 

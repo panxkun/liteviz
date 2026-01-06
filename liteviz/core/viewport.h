@@ -285,7 +285,12 @@ public:
         this->fov = fov;
     }
 
-    void setViewMatrix(mat4f viewmat){
+    void setViewMatrix(mat4f viewmat, float dist=0.0f){
+        // set camera distance
+        vec3f cam_pos = viewmat.block<3,1>(0,3);
+        vec3f cam_dir = -viewmat.block<3,3>(0,0).col(2);
+        cam_pos = cam_pos + cam_dir * dist;
+        viewmat.block<3,1>(0,3) = cam_pos;
         camera.initTransformation(viewmat * openGLTransform);
     }
 
