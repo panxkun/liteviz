@@ -78,6 +78,7 @@ public:
     ImGuiWindowFlags window_flags = 0;
     vec4f clearColor = vec4f(1.0f, 1.0f, 1.0f, 0.00f);
     bool any_window_active = false;
+    bool camera_mouse_active = false;
     bool isRunning = true;
 
     // Notifier for synchronization
@@ -95,6 +96,5 @@ public:
 } // namespace liteviz
 
 #endif // __LITEVIZ_DETAIL_H__
-
 
 

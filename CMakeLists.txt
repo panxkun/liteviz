@@ -13,4 +13,10 @@ superbuild_option(modern-cpp)
 
 add_subdirectory(liteviz)
 
-add_subdirectory(examples/cube)
+# Option to build examples
+option(BUILD_EXAMPLES "Build example applications" OFF)
+
+# Add examples subdirectory if BUILD_EXAMPLES is ON
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
