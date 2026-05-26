@@ -105,18 +105,33 @@ void liteviz::ViewerDetail::updateWindowSize(){
 
 
 void liteviz::ViewerDetail::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-    if(_detail->any_window_active)
+    (void)mods;
+
+    const bool camera_button = button == GLFW_MOUSE_BUTTON_LEFT || button == GLFW_MOUSE_BUTTON_RIGHT;
+    if(!camera_button)
         return;
 
-    if((button == GLFW_MOUSE_BUTTON_LEFT || button == GLFW_MOUSE_BUTTON_RIGHT) && action == GLFW_PRESS) {
+    if(action == GLFW_RELEASE) {
+        _detail->camera_mouse_active =
+            glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS ||
+            glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+        return;
+    }
+
+    ImGuiIO& io = ImGui::GetIO();
+    if(_detail->any_window_active || io.WantCaptureMouse)
+        return;
+
+    if(action == GLFW_PRESS) {
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
+        _detail->camera_mouse_active = true;
         _detail->_viewport.camera.initScreenPos(liteviz::vec2f(xpos, ypos));
     }
 }
 
 void liteviz::ViewerDetail::cursorPosCallback(GLFWwindow* window, double x, double y) {
-    if(_detail->any_window_active)
+    if(!_detail->camera_mouse_active)
         return;
 
     if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
@@ -127,7 +142,10 @@ void liteviz::ViewerDetail::cursorPosCallback(GLFWwindow* window, double x, doub
 }
 
 void liteviz::ViewerDetail::scrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-    if (_detail->any_window_active)
+    (void)xoffset;
+
+    ImGuiIO& io = ImGui::GetIO();
+    if (_detail->any_window_active || io.WantCaptureMouse)
         return;
 
     const float raw_delta = static_cast<float>(yoffset);
@@ -139,7 +157,9 @@ void liteviz::ViewerDetail::scrollCallback(GLFWwindow* window, double xoffset, d
     const float scale = shift_pressed ? 0.1f : 1.0f;
     const float delta = raw_delta * scale;
 
-    _detail->_viewport.camera.zoom(delta);
+    double xpos, ypos;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    _detail->_viewport.camera.zoom(delta, liteviz::vec2f(xpos, ypos));
 }
 
 void liteviz::ViewerDetail::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods){

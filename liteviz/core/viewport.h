@@ -2,6 +2,7 @@
 #define __LITEVIZ_VIEWPORT_H__
 
 #include <liteviz/core/common.h>
+#include <algorithm>
 #if defined(__APPLE__)
 #include <OpenGL/gl.h>
 #else
@@ -26,6 +27,10 @@ public:
 
     void rotate(const vec2f& pos){
         vec2f offset = (pos - prevPos);
+        if(offset.squaredNorm() > 50.0f * 50.0f){
+            prevPos = pos;
+            return;
+        }
         float rf = 0.005f;
 
         mat4f T1 = mat4f::Identity();
@@ -46,8 +51,12 @@ public:
 
     void translate(const vec2f& pos){
         vec2f offset = (pos - prevPos);
+        if(offset.squaredNorm() > 50.0f * 50.0f){
+            prevPos = pos;
+            return;
+        }
         float tf = 0.1;
-        if(last_z == 1){
+        if(!has_intersection){
             deltaTransform.block<3, 1>(0, 3) = vec3f(offset.x() * tf, -offset.y() * tf, 0);
         }else{
             vec3f Pw;
@@ -64,9 +73,22 @@ public:
         prevPos = pos;
     }
 
-    void zoom(float delta){
+    void zoom(float delta, const vec2f& pos){
+        float zNDC;
+        vec3f pc;
+        vec3f pw;
+        if(viewport->getPixelPosition(pos, zNDC, pw, pc, last_z)){
+            last_z = zNDC;
+            intersection_center = pc;
+            has_intersection = true;
+        }
 
-        deltaTransform(2, 3) = delta;
+        constexpr float zoom_fraction = 0.10f;
+        if(has_intersection && intersection_center.squaredNorm() > 1.0e-12f){
+            deltaTransform.block<3, 1>(0, 3) = intersection_center * (-delta * zoom_fraction);
+        }else{
+            deltaTransform(2, 3) = delta;
+        }
 
         transform = transform * deltaTransform.inverse();
         deltaTransform = mat4f::Identity();
@@ -83,11 +105,14 @@ public:
         float zNDC;
         vec3f pc;
         vec3f pw;
-        viewport->getPixelPosition(pos, zNDC, pw, pc, last_z);
 
-        if(zNDC != 1){
+        if(viewport->getPixelPosition(pos, zNDC, pw, pc, last_z)){
             last_z = zNDC;
             intersection_center = pc;
+            has_intersection = true;
+        }else{
+            intersection_center = pc;
+            has_intersection = true;
         }
         prevPos = pos;
     }
@@ -115,6 +140,7 @@ public:
 private:
     float last_z;
     vec3f intersection_center;
+    bool has_intersection = false;
     mat4f transform;      // camera to world
     mat4f deltaTransform;
     vec2f prevPos;
@@ -144,6 +170,7 @@ public:
         vec3f up        = vec3f(0, 0, 1)) // up usually be set to (0, 1, 0)
     {
         windowSize = Eigen::Vector2i(width, height);
+        frameBufferSize = windowSize;
         vec3f zAxis = (eye - center).normalized();
         vec3f xAxis = up.cross(zAxis).normalized();
         vec3f yAxis = zAxis.cross(xAxis).normalized();
@@ -200,23 +227,25 @@ public:
         return frameBufferSize;
     }
 
-    void getPixelPosition(const vec2f& pos, float& zNDC, vec3f& Pw, vec3f& Pc, float default_z){
-        Eigen::Vector2i pick_pos = {int(pos.x()), int(windowSize.y() - pos.y())};
+    bool getPixelPosition(const vec2f& pos, float& zNDC, vec3f& Pw, vec3f& Pc, float default_z){
+        Eigen::Vector2i pick_pos = windowToFramebufferPixel(pos);
         glReadPixels(pick_pos.x(), pick_pos.y(), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &zNDC);
 
-        if(zNDC == 1){
+        const bool valid_depth = zNDC < 1.0f;
+        if(!valid_depth){
             zNDC = default_z;
         }
 
         pixelUnproject(pos, zNDC, Pw, Pc);
+        return valid_depth;
     }
 
     void pixelUnproject(const vec2f& pos, const float& zNDC, vec3f& Pw, vec3f& Pc){
         vec3d Pc_;
         mat4d Identity = mat4d::Identity();
         mat4d Projmatrix = getProjectionMatrix().cast<double>();
-        Eigen::Vector4i Viewport = Eigen::Vector4i(0, 0, windowSize.x(), windowSize.y());
-        Eigen::Vector2i pick_pos = {int(pos.x()), int(windowSize.y() - pos.y())};
+        Eigen::Vector4i Viewport = Eigen::Vector4i(0, 0, frameBufferSize.x(), frameBufferSize.y());
+        Eigen::Vector2i pick_pos = windowToFramebufferPixel(pos);
 
         // Replace deprecated gluUnProject with local implementation using Eigen
         double objx = 0.0, objy = 0.0, objz = 0.0;
@@ -230,6 +259,20 @@ public:
 
         Pc = Pc_.cast<float>();
         Pw = camera.getRotation() * Pc + camera.getPosition();
+    }
+
+    Eigen::Vector2i windowToFramebufferPixel(const vec2f& pos) const {
+        const int fb_width = std::max(1, frameBufferSize.x());
+        const int fb_height = std::max(1, frameBufferSize.y());
+        const int win_width = std::max(1, windowSize.x());
+        const int win_height = std::max(1, windowSize.y());
+
+        const float sx = static_cast<float>(fb_width) / static_cast<float>(win_width);
+        const float sy = static_cast<float>(fb_height) / static_cast<float>(win_height);
+
+        const int x = std::clamp(static_cast<int>(pos.x() * sx), 0, fb_width - 1);
+        const int y = std::clamp(fb_height - 1 - static_cast<int>(pos.y() * sy), 0, fb_height - 1);
+        return Eigen::Vector2i(x, y);
     }
 
     // Replacement implementation of gluUnProject using Eigen.

@@ -26,5 +26,4 @@ target_link_libraries(liteviz-core
 target_compile_definitions(liteviz-core
     PUBLIC 
     RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-    _GLIBCXX_USE_CXX11_ABI=0
 )
